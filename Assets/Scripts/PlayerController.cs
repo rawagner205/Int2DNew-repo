@@ -9,9 +9,10 @@ using System.Xml.Linq;
 public class PlayerController : MonoBehaviour
 {
     // controls forward motion speed
-    [SerializeField] float forwardSpeed = 8f;
+    float forwardSpeed = 16f;
     //controls side-to-side steering speed
-    [SerializeField] float lateralSpeed = 10f;
+    float lateralSpeed = 10f;
+    //controls steering speed when boost is activated
 
     Rigidbody2D rb;
 
@@ -26,6 +27,9 @@ public class PlayerController : MonoBehaviour
 
     public GameObject explosionEffect;
 
+    private Label loseLabel;
+    private Label winLabel;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -39,6 +43,13 @@ public class PlayerController : MonoBehaviour
         //setup boost tracker
         boostLabel = uiDocument.rootVisualElement.Q<Label>("BoostLabel");
         boostLabel.style.display = DisplayStyle.None;
+
+        //Set up win/lose messages
+        winLabel = uiDocument.rootVisualElement.Q<Label>("WinLabel");
+        winLabel.style.display = DisplayStyle.None;
+
+        loseLabel = uiDocument.rootVisualElement.Q<Label>("LoseLabel");
+        loseLabel.style.display = DisplayStyle.None;
     }
 
     // Update is called once per frame
@@ -71,12 +82,13 @@ public class PlayerController : MonoBehaviour
         {
             elapsedTime += Time.deltaTime;
             float timeLeft = Mathf.Round(5 - elapsedTime);
-            boostLabel.text = "Steering Boost - " + timeLeft + " seconds";
+            boostLabel.text = "Steering Boost - " + timeLeft + "s";
             if (elapsedTime >= 5.0)
             {
                 boostOn = false;
                 boostLabel.style.display = DisplayStyle.None;
                 lateralSpeed = 10f;
+                elapsedTime = 0;
             }
         }
 
@@ -106,6 +118,7 @@ public class PlayerController : MonoBehaviour
         {
             lateralSpeed = 0f;
             forwardSpeed = 0f;
+            winLabel.style.display = DisplayStyle.Flex;
             restartButton.style.display = DisplayStyle.Flex;
 
             //Turn off boost if boost is on
@@ -123,6 +136,7 @@ public class PlayerController : MonoBehaviour
         Instantiate(explosionEffect, transform.position, transform.rotation);
         Destroy(gameObject.transform.parent.gameObject);
         boostLabel.style.display = DisplayStyle.None;
+        loseLabel.style.display = DisplayStyle.Flex;
         restartButton.style.display = DisplayStyle.Flex;
     }
 }
