@@ -26,7 +26,6 @@ public class PlayerController : MonoBehaviour
 
     public GameObject explosionEffect;
 
-
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -61,19 +60,13 @@ public class PlayerController : MonoBehaviour
         // Apply movement and rotation 
 
         float steerAmount = steer * lateralSpeed * Time.deltaTime;
+        float moveAmount = forwardSpeed * Time.deltaTime;
+        transform.Translate(0, moveAmount, 0);
+        transform.Translate(steerAmount, 0, 0);
+        
 
-        Debug.Log("Forward Speed: " + forwardSpeed);
-        if (forwardSpeed <= 0.0f)
-        {
-            rb.linearVelocity = Vector2.zero;
-        }
-        else
-        {
-            float moveAmount = forwardSpeed * Time.deltaTime;
-            transform.Translate(0, moveAmount, 0);
-            transform.Translate(steerAmount, 0, 0);
-        }
-
+        //When boost is activated, increase steering speed for 5 seconds
+        //Also updates boost countdown timer text
         if (boostOn == true)
         {
             elapsedTime += Time.deltaTime;
@@ -108,20 +101,28 @@ public class PlayerController : MonoBehaviour
             boostOn = true;
         }
 
-        //When finish line is crossed, stop all sprite movement
+        //When finish line is crossed, stop all sprite movement and display Restart button
         if (collision.CompareTag("Finish"))
         {
             lateralSpeed = 0f;
-            forwardSpeed = -1.0f;
+            forwardSpeed = 0f;
+            restartButton.style.display = DisplayStyle.Flex;
+
+            //Turn off boost if boost is on
+            if (boostOn == true)
+            {
+                boostOn = false;
+                boostLabel.style.display = DisplayStyle.None;
+            }
         }
     }
 
     void OnCollisionEnter2D(Collision2D collision)
-    {
+    {  
         //Destroy player sprite with explosion on collision
-        Destroy(gameObject);
         Instantiate(explosionEffect, transform.position, transform.rotation);
+        Destroy(gameObject.transform.parent.gameObject);
+        boostLabel.style.display = DisplayStyle.None;
         restartButton.style.display = DisplayStyle.Flex;
-
     }
 }
