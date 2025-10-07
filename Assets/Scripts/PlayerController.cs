@@ -1,46 +1,40 @@
-using System.Runtime.CompilerServices;
-using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 using UnityEngine.SceneManagement;
-using System.Xml.Linq;
 
 public class PlayerController : MonoBehaviour
 {
-    // controls forward motion speed
-    float forwardSpeed = 16f;
-    //controls side-to-side steering speed
-    float lateralSpeed = 10f;
-    //controls steering speed when boost is activated
+    //Controls forward motion speed
+    [SerializeField] float forwardSpeed = 16f;
+    //Controls side-to-side steering speed
+    [SerializeField] float originalLateralSpeed, lateralSpeed = 10f;
 
-    Rigidbody2D rb;
-
-    // variables for restart button
+    //Variables for restart button
     public UIDocument uiDocument;
     private Button restartButton;
 
-    //variables for boost 
+    //Variables for boost 
     private Label boostLabel;
     private float elapsedTime = 0f;
     private bool boostOn = false;
+    [SerializeField] float boostTime = 5f;
+    [SerializeField] float boostSpeed = 20f;
 
     public GameObject explosionEffect;
 
-    private Label loseLabel;
+    //Text for win/lose game over conditions
     private Label winLabel;
+    private Label loseLabel;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
-
-        //setup restart button
+        //Set up restart button
         restartButton = uiDocument.rootVisualElement.Q<Button>("RestartButton");
         restartButton.style.display = DisplayStyle.None;
         restartButton.clicked += ReloadScene;
 
-        //setup boost tracker
+        //Set up boost tracker
         boostLabel = uiDocument.rootVisualElement.Q<Label>("BoostLabel");
         boostLabel.style.display = DisplayStyle.None;
 
@@ -52,13 +46,11 @@ public class PlayerController : MonoBehaviour
         loseLabel.style.display = DisplayStyle.None;
     }
 
-    // Update is called once per frame
     void Update()
     {
-
         float steer = 0f;
 
-        // Left and Right steering
+        // Left and right steering
         if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed)
         {
             steer = -1f;
@@ -68,56 +60,57 @@ public class PlayerController : MonoBehaviour
             steer = 1f;
         }
 
-        // Apply movement and rotation 
-
+        //Apply movement and rotation 
         float steerAmount = steer * lateralSpeed * Time.deltaTime;
         float moveAmount = forwardSpeed * Time.deltaTime;
         transform.Translate(0, moveAmount, 0);
         transform.Translate(steerAmount, 0, 0);
-        
 
-        //When boost is activated, increase steering speed for 5 seconds
-        //Also updates boost countdown timer text
         if (boostOn == true)
         {
+            //Calculate and display time left for boost
             elapsedTime += Time.deltaTime;
-            float timeLeft = Mathf.Round(5 - elapsedTime);
+            float timeLeft = Mathf.Round(boostTime - elapsedTime);
             boostLabel.text = "Steering Boost - " + timeLeft + "s";
+
+            //When timer runs out, reset back to normal
             if (elapsedTime >= 5.0)
             {
-                boostOn = false;
                 boostLabel.style.display = DisplayStyle.None;
-                lateralSpeed = 10f;
+                lateralSpeed = originalLateralSpeed;
                 elapsedTime = 0;
-            }
+                boostOn = false;
+            } 
         }
-
-
     }
 
     void ReloadScene()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
-
     void OnTriggerEnter2D(Collider2D collision)
     {
-        //If collided with Boost, increase maneuvering speed
+        //If collided with Boost object, turn on boost function
         if (collision.CompareTag("Boost"))
         {
-            lateralSpeed = 20f;
+            lateralSpeed = boostSpeed;
             Destroy(collision.gameObject);
 
-            //update counter for boost timer
+            //Display  boost timer
             boostLabel.style.display = DisplayStyle.Flex;
+
+            //Turn on boost function
             boostOn = true;
         }
 
         //When finish line is crossed, stop all sprite movement and display Restart button
         if (collision.CompareTag("Finish"))
         {
+            //Cut off player movement
             lateralSpeed = 0f;
             forwardSpeed = 0f;
+
+            //Display end text and restart button
             winLabel.style.display = DisplayStyle.Flex;
             restartButton.style.display = DisplayStyle.Flex;
 
@@ -130,11 +123,14 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    //Destroy player sprite with explosion on collision
     void OnCollisionEnter2D(Collision2D collision)
     {  
-        //Destroy player sprite with explosion on collision
+        //Destroy sprite and create explosion
         Instantiate(explosionEffect, transform.position, transform.rotation);
         Destroy(gameObject.transform.parent.gameObject);
+
+        //Turn off boost text, and display end text and start button
         boostLabel.style.display = DisplayStyle.None;
         loseLabel.style.display = DisplayStyle.Flex;
         restartButton.style.display = DisplayStyle.Flex;
